@@ -1,0 +1,277 @@
+---
+title: "Cleaning art data"
+author: "Paul Bradshaw"
+date: "30 November 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Clean up years
+
+The 'year' column of our data (bbcartfull$year) has mixed data. First, identify problems to clean up:
+* Years (numbers)
+* circa (c.) - DONE
+* Estimates or unsure (?) - DONE
+* centuries (18th C) - DONE (but some say early, late, etc)
+* Plurals (1800s, 1890s) - DONE (but some say early, late, etc)
+* Date ranges (1894-1895, 1894-95, 1894-5)
+* Combinations of the above (late 1950s–early 1960s, early 1980s (?) ) - these will be left unless too numerous
+
+
+Copy across to a new variable and then transform that:
+
+```{r}
+datecleaning <- bbcartfull
+```
+
+### 'String normalisation'
+
+Import the stringr library and use a basic trim function on the year column:
+
+```{r}
+library("stringr")
+trimyr <- str_trim(datecleaning$year)
+datecleaning$trimyr <- trimyr
+```
+
+Now we have a new column that we can keep changing
+
+```{r}
+datecleaning$trimyr <- tolower(datecleaning$trimyr)
+```
+
+Use the `char()` function to count characters in each year entry, in order to identify those longer than 4 chars:
+
+```{r}
+yearchars <- nchar(datecleaning$trimyr)
+datecleaning$yrchars <- yearchars
+```
+
+Use `grepl` to create TRUE/FALSE column for entries with 'c' in it and put in 'circa'. Repeat this for date ranges with dashes. This is a quality control step which allows us to find those that we have cleaned later.
+
+```{r}
+circa <- grepl("c", datecleaning$trimyr)
+datecleaning$circa <- circa
+# Because a minus and a question mark has a special meaning in regex, we need to escape it with a double slash
+daterange <- grepl("\\-", datecleaning$trimyr)
+datecleaning$daterange <- daterange
+estimated <- grepl("\\?", datecleaning$trimyr)
+datecleaning$estimated <- estimated
+centuryonly <- grepl("th C", datecleaning$trimyr)
+datecleaning$centuryonly <- centuryonly
+# For some reason this doesn't work on our trimmed dates, so we need to use the original year column
+centuryonly <- grepl("th C", datecleaning$year)
+datecleaning$centuryonly <- centuryonly
+# We can test whether we are getting true results by using summary
+summary(datecleaning$centuryonly)
+plurals <- grepl("s", datecleaning$trimyr)
+datecleaning$plurals <- plurals
+summary(datecleaning$plurals)
+```
+
+We can create subsets of our data based on those that came up true for unclean dates like so:
+
+```{r}
+circas <- subset(bbcartfull, datecleaning$circa == TRUE)
+dateranges <- subset(bbcartfull, datecleaning$daterange == TRUE)
+```
+
+Now with all of that stored, we can begin to transform the column.
+
+We have made a decision to treat circa and (?) dates as accurate enough to use as part of an averaging calcuation, so we will remove the characters to make them into a whole number. Decade ranges will be replaced with their midpoint (e.g. 1980s would become 1985) and century ranges too (19th C would become 1850)
+
+Here we substitute any occurrence of "c." with nothing (""), and then put the results back in the column we used:
+
+```{r}
+# . and (?) needs escaping because those characters have special meanings
+datecleaning$trimyr <- gsub("c\\."," ",datecleaning$trimyr)
+datecleaning$trimyr <- gsub("\\(\\?\\)","",datecleaning$trimyr)
+# Replace 0s with 5 to turn decades into midpoints where no other direction is given such as 'late-1970s'
+datecleaning$trimyr <- gsub("0s","5",datecleaning$trimyr)
+```
+
+We could use a similar line for the centuries:
+```{r}
+datecleaning$trimyr <- gsub("th c","50",datecleaning$trimyr)
+```
+
+But this would replace 19th c with 1950, which is actually 20th century! 
+
+Let's split our data into two subsets, then: those that are centuries, and those that are not. 
+```{r}
+nocenturies <- subset(datecleaning, datecleaning$centuryonly == FALSE)
+centuriesonly <- subset(datecleaning, datecleaning$centuryonly == TRUE)
+```
+
+Then we convert the century dates to numbers and subtract 100, and check the summary doesn't include the year 2050!
+
+```{r}
+centuriesonly$trimyr <- as.numeric(centuriesonly$trimyr)-100
+summary(centuriesonly$trimyr)
+```
+
+
+
+## turning into numbers
+
+Once we've cleaned as much as we can, we need to convert those date years from text into numbers:
+
+datesasnumbers <- as.numeric(datecleaning$trimyr)
+
+This will generate a warning about NA results 'introduced by coercion'. This is where it cannot convert to a number.
+
+## Summarising
+
+We can get an overview of our years using the `summary` function, although we need to convert to numeric for this to work:
+
+```{r}
+summary(as.numeric(recombined$trimyr))
+```
+
+That gives us a minimum value, a maximum (2016), a median, mean and quartiles. But there are also 100,181 NAs (errors). Let's try to identify why so many are errors. One cause might be entries that have no year at all - they are down as 'null':
+
+```{r}
+noyear <- subset(datecleaning, datecleaning$trimyr == "null")
+```
+
+This new object has 73,479 records, which is a big chunk of that 100,000 or so. What about those that are date ranges?
+
+```{r}
+dateranges <- subset(datecleaning, datecleaning$daterange == TRUE)
+```
+
+Another 3000. What about those long descriptions of year? We can create a subset based on those that had more than 6 characters (so not including c.) or 7 or 8 ((?))
+
+```{r}
+over6 <- subset(datecleaning, datecleaning$yrchars > 6)
+```
+
+That gives us around 25,000 more, which neatly fills the amount we're looking for, although it might include those already cleaned. We could re-run the character count line we started with to check. 
+
+We can create a new column in our main dataset that just shows the first four characters of our year column. For those years already cleaned, this will just grab the year, but for date ranges it will grab the first part of that range. For mixed descriptions it will grab text characters. Because this is the 'year from' we'll call it that:
+
+```{r}
+datecleaning$yrfrom <- substr(datecleaning$trimyr,1,4)
+```
+
+The `substr` function grabs a substring based on a start and end position specified (in this case 1 and 4)
+
+To grab the *last* four characters we can use the `str_sub` function. This operates in a similar way, but uses `start=` and can include negative indexes. In this case `start=-4` means start at the position four places from the end. If we omit an end parameter if just continues to the end.
+
+```{r}
+datecleaning$yrto <- str_sub(datecleaning$trimyr,start=-4)
+```
+
+Again, if it's only 4 characters (just one year) then it'll be the same as the year to. If the date range has two complete years, like 1980-1981 then it will work, but a partial year like 1980-81 will not work. We would need further cleaning to sort that out.
+
+Now we can test how well those two techniques have worked:
+
+```{r}
+
+```
+
+We are only getting 83,512 errors for the year from, and 77,000 for the year to. That's surprisingly good given how many we know are nulls. Curiously, the years to give us a mean slightly *lower* than the years from.
+
+Unfortunately, checking the results shows that some years have only had 3 digits extracted.
+
+So we need to find another way to extract the four digits. One would be to use regular expressions (regex) to specify four digits, but first we need to check that there are no years before 1000 (which would have 3 digits):
+
+```{r}
+earlyyears <- subset(datecleaning, datecleaning$yrchars <4 & datecleaning$yrchars > 0)
+```
+
+That only finds one result, which is 'x' (1 character long), so fine. We can grab four digits.
+
+[Here's a page on how to use regular expressions](http://www.regular-expressions.info/rlanguage.html) to grab patterns that match. 
+
+Another approach is to test where grabbing the first four characters is going wrong, by grabbing each one in turn:
+
+```{r}
+datecleaning$dig1 <- substr(datecleaning$trimyr,1,1)
+datecleaning$dig2 <- substr(datecleaning$trimyr,2,2)
+datecleaning$dig3 <- substr(datecleaning$trimyr,3,3)
+datecleaning$dig4 <- substr(datecleaning$trimyr,4,4)
+```
+
+This shows us that in some cases the first character is empty, which is resulting in our 3 digit results when we grab the first 4 characters.
+
+Closer inspection suggests the problem is with the years that were 'circa', or 'c.' - we trimmed the years *before* removing that, so a white space was added. Trimming again solves the problem: 
+
+```{r}
+datecleaning$trimyr <- str_trim(datecleaning$trimyr)
+```
+
+And then re-running the lines to grab the first and last four digits into columns:
+
+```{r}
+datecleaning$yrfrom <- substr(datecleaning$trimyr,1,4)
+datecleaning$yrto <- str_sub(datecleaning$trimyr,start=-4)
+summary(as.numeric(datecleaning$yrfrom))
+```
+
+Now we're down to just under 90,000 NAs of which 75,000 are nulls, leaving us 15,000 to potentially still extract.
+
+One pattern we notice is 'early 19th c' and similar. We can clean those up like so:
+
+```{r}
+# Create a subset to look just at those with long descriptions
+longyrs <- subset(datecleaning,datecleaning$yrchars>9)
+# Grab one column from that
+testclean <- longyrs$trimyr
+testclean <- gsub("late 19th c",1875,testclean)
+summary(as.numeric(testclean))
+testclean <- gsub("late 18th c",1775,testclean)
+testclean <- gsub("late 17th c",1675,testclean)
+testclean <- gsub("late 16th c",1575,testclean)
+testclean <- gsub("late 15th c",1475,testclean)
+testclean <- gsub("late 14th c",1375,testclean)
+testclean <- gsub("early 19th c",1825,testclean)
+testclean <- gsub("early 18th c",1725,testclean)
+testclean <- gsub("early 17th c",1625,testclean)
+testclean <- gsub("early 16th c",1525,testclean)
+testclean <- gsub("early 15th c",1425,testclean)
+testclean <- gsub("early 14th c",1325,testclean)
+summary(as.numeric(testclean))
+testclean <- gsub("mid 19th c",1850,testclean)
+testclean <- gsub("mid 18th c",1750,testclean)
+testclean <- gsub("mid 17th c",1650,testclean)
+testclean <- gsub("mid 16th c",1550,testclean)
+testclean <- gsub("mid 15th c",1450,testclean)
+testclean <- gsub("mid 14th c",1350,testclean)
+```
+
+As we progress we see the numbers of NAs go down, and the median date go down too, which is positive: it shows the earlier years are hiding in our less clear-cut years.
+
+## Another way: extracting a summary and cleaning in Excel
+
+We can use the `summary` function to count frequently recurring types of entry and clean them accordingly. That doesn't work on the 'trimyr' column because that's a character
+
+```{r}
+typeof(datecleaning$trimyr)
+typeof(datecleaning)
+typeof(datecleaning$title)
+typeof(datecleaning$year)
+```
+
+But other columns that are 'integer' can be counted. So we can do this on 'year'. First, extract into a new object. Then write a summary of that to a CSV:
+
+```{r}
+yearspivot <- datecleaning$year
+write.csv(summary(yearspivot), 'yearspivot.csv')
+```
+
+The result only has 100 rows because by default `summary` limits itself to the 100 most common results. To change this you need to add the `maxsum` parameter:
+
+```{r}
+# Bring up documentation for summary
+?summary
+# Set 200 limit instead of default 100
+write.csv(summary(yearspivot, maxsum=200), 'yearspivot.csv')
+# Eventually we work out that there are just over 10000 results
+write.csv(summary(yearspivot, maxsum=11000), 'yearspivot.csv')
+```
+
+## Check if string contains another string

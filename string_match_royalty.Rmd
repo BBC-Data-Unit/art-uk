@@ -1,0 +1,162 @@
+---
+title: "Identifying monarchs using string matching"
+author: "Paul Bradshaw"
+date: "14 December 2016"
+output: html_document
+---
+
+Our full data is in 'bbcartfull'. We only need the title column so take it and place it in a new table object, we'll call it 'royalty':
+
+```{r}
+#This line uses an index rather than $columnname because $columnname does not create a table
+royalty <- bbcartfull[3]
+#We might prefer to import this from a version after dates have been cleaned
+```
+
+Shall we create a new column based on replacing any title containing 'Elizabeth I' with the string 'Elizabeth I' like so? `royalty$monarch <- gsub(".*Elizabeth I.*", "Monarch: Elizabeth I", royalty$title)`
+
+NO! Because it will also replace Elizabeth II. So we need to start at the bigger numbers:
+
+```{r}
+royalty$monarch <- gsub(".*Elizabeth II.*", "Monarch: Elizabeth II", royalty$title)
+```
+
+How do we match Elizabeth I but *not* Elizabeth II? By using [^I] to indicate not followed by an I: `royalty$monarch <- gsub(".*Elizabeth I[^I].*", "Monarch: Elizabeth I", royalty$monarch)`
+
+In fact, we could broaden that further to say 'not followed by *any* letter' - the regex `[^A-Za-z]` - because we also want to exclude potential matches like 'Elizabeth Is Swimming' (yes, unlikely but still...)
+
+
+```{r}
+royalty$monarch <- gsub(".*Elizabeth I[^A-Za-z].*", "Monarch: Elizabeth I", royalty$monarch)
+lizzies <- subset(royalty, royalty$monarch == "Monarch: Elizabeth I")
+lizzies <- subset(royalty, royalty$monarch == "Monarch: Elizabeth II")
+```
+
+Now to do the rest - some of these formulae can be generated in Excel using a list of monarchs. Also, troubleshooting can be done in Excel too - see the spreadsheet in the same GitHub repo as this file.
+
+```{r}
+royalty$monarch <- gsub('.*George VI[^A-Za-z].*', 'Monarch: George VI', royalty$monarch)
+royalty$monarch <- gsub('.*George V[^A-Za-z].*', 'Monarch: George V', royalty$monarch)
+royalty$monarch <- gsub('.*George IV[^A-Za-z].*', 'Monarch: George IV', royalty$monarch)
+royalty$monarch <- gsub('.*George III[^A-Za-z].*', 'Monarch: George III', royalty$monarch)
+royalty$monarch <- gsub('.*George II[^A-Za-z].*', 'Monarch: George II', royalty$monarch)
+royalty$monarch <- gsub('.*George I[^A-Za-z].*', 'Monarch: George I', royalty$monarch)
+royalty$monarch <- gsub('.*Edward VIII[^A-Za-z].*', 'Monarch: Edward VIII', royalty$monarch)
+royalty$monarch <- gsub('.*Edward VII[^A-Za-z].*', 'Monarch: Edward VII', royalty$monarch)
+royalty$monarch <- gsub('.*Edward VI[^A-Za-z].*', 'Monarch: Edward VI', royalty$monarch)
+royalty$monarch <- gsub('.*Edward V[^A-Za-z].*', 'Monarch: Edward V', royalty$monarch)
+royalty$monarch <- gsub('.*Edward IV[^A-Za-z].*', 'Monarch: Edward IV', royalty$monarch)
+royalty$monarch <- gsub('.*Edward III[^A-Za-z].*', 'Monarch: Edward III', royalty$monarch)
+royalty$monarch <- gsub('.*Edward II[^A-Za-z].*', 'Monarch: Edward II', royalty$monarch)
+royalty$monarch <- gsub('.*Edward I[^A-Za-z].*', 'Monarch: Edward I', royalty$monarch)
+royalty$monarch <- gsub('.*William IV[^A-Za-z].*', 'Monarch: William IV', royalty$monarch)
+royalty$monarch <- gsub('.*William III[^A-Za-z].*', 'Monarch: William III', royalty$monarch)
+royalty$monarch <- gsub('.*William II[^A-Za-z].*', 'Monarch: William II', royalty$monarch)
+royalty$monarch <- gsub('.*William I[^A-Za-z].*', 'Monarch: William I', royalty$monarch)
+royalty$monarch <- gsub('.*James II[^A-Za-z].*', 'Monarch: James II', royalty$monarch)
+royalty$monarch <- gsub('.*James I[^A-Za-z].*', 'Monarch: James I', royalty$monarch)
+royalty$monarch <- gsub('.*Charles II[^A-Za-z].*', 'Monarch: Charles II', royalty$monarch)
+royalty$monarch <- gsub('.*Charles I[^A-Za-z].*', 'Monarch: Charles I', royalty$monarch)
+royalty$monarch <- gsub('.*Richard Cromwell[^A-Za-z].*', 'Monarch: Richard Cromwell', royalty$monarch)
+#Cromwell isn't classed as a monarch, but we'll include him anyway
+royalty$monarch <- gsub('.*Oliver Cromwell[^A-Za-z].*', 'Monarch: Oliver Cromwell', royalty$monarch)
+royalty$monarch <- gsub('.*Mary I[^A-Za-z].*', 'Monarch: Mary I', royalty$monarch)
+royalty$monarch <- gsub('.*Henry VIII[^A-Za-z].*', 'Monarch: Henry VIII', royalty$monarch)
+royalty$monarch <- gsub('.*Henry VII[^A-Za-z].*', 'Monarch: Henry VII', royalty$monarch)
+royalty$monarch <- gsub('.*Henry VI[^A-Za-z].*', 'Monarch: Henry VI', royalty$monarch)
+royalty$monarch <- gsub('.*Henry V[^A-Za-z].*', 'Monarch: Henry V', royalty$monarch)
+royalty$monarch <- gsub('.*Henry IV[^A-Za-z].*', 'Monarch: Henry IV', royalty$monarch)
+royalty$monarch <- gsub('.*Henry III[^A-Za-z].*', 'Monarch: Henry III', royalty$monarch)
+royalty$monarch <- gsub('.*Henry II[^A-Za-z].*', 'Monarch: Henry II', royalty$monarch)
+royalty$monarch <- gsub('.*Henry I[^A-Za-z].*', 'Monarch: Henry I', royalty$monarch)
+royalty$monarch <- gsub('.*Richard III[^A-Za-z].*', 'Monarch: Richard III', royalty$monarch)
+royalty$monarch <- gsub('.*Richard II[^A-Za-z].*', 'Monarch: Richard II', royalty$monarch)
+royalty$monarch <- gsub('.*Richard I[^A-Za-z].*', 'Monarch: Richard I', royalty$monarch)
+# These are Scottish monarchs
+royalty$monarch <- gsub('.*James VI[^A-Za-z].*', 'Monarch: James VI (James I of England 1603-1625)', royalty$monarch)
+royalty$monarch <- gsub('.*James V[^A-Za-z].*', 'Monarch: James V', royalty$monarch)
+royalty$monarch <- gsub('.*James IV[^A-Za-z].*', 'Monarch: James IV', royalty$monarch)
+royalty$monarch <- gsub('.*James III[^A-Za-z].*', 'Monarch: James III', royalty$monarch)
+royalty$monarch <- gsub('.*James II[^A-Za-z].*', 'Monarch: James II', royalty$monarch)
+royalty$monarch <- gsub('.*James I[^A-Za-z].*', 'Monarch: James I', royalty$monarch)
+royalty$monarch <- gsub('.*Alexander II[^A-Za-z].*', 'Monarch: Alexander II', royalty$monarch)
+royalty$monarch <- gsub('.*Alexander III[^A-Za-z].*', 'Monarch: Alexander III', royalty$monarch)
+#This is obviously going to get a lot of false matches, so we make it 'possible monarch'
+royalty$monarch <- gsub('.*Margaret[^A-Za-z].*', 'Possible monarch: Margaret', royalty$monarch)
+royalty$monarch <- gsub('.*John Balliol[^A-Za-z].*', 'Monarch: John Balliol', royalty$monarch)
+royalty$monarch <- gsub('.*Robert I[^A-Za-z].*', 'Monarch: Robert I (The Bruce)', royalty$monarch)
+royalty$monarch <- gsub('.*David II[^A-Za-z].*', 'Monarch: David II', royalty$monarch)
+royalty$monarch <- gsub('.*Edward Balliol[^A-Za-z].*', 'Monarch: Edward Balliol', royalty$monarch)
+royalty$monarch <- gsub('.*Robert II[^A-Za-z].*', 'Monarch: Robert II', royalty$monarch)
+royalty$monarch <- gsub('.*Robert III[^A-Za-z].*', 'Monarch: Robert III', royalty$monarch)
+```
+
+Victoria, Anne, Mary are problematic. Let's try 'Queen' Victoria etc for now:
+
+```{r}
+royalty$monarch <- gsub('.*Queen Victoria.*', 'Monarch: Queen Victoria', royalty$monarch)
+royalty$monarch <- gsub('.*Queen Anne.*', 'Monarch: Queen Anne', royalty$monarch)
+#These next 4 lines could actually be done in 1 line, but for clarity...
+royalty$monarch <- gsub('.*Mary, Queen of Scots.*', 'Monarch: Mary, Queen of Scots', royalty$monarch)
+royalty$monarch <- gsub('.*Mary Queen of Scots.*', 'Monarch: Mary, Queen of Scots', royalty$monarch)
+royalty$monarch <- gsub('.*Queen of Scots.*', 'Monarch: Mary, Queen of Scots', royalty$monarch)
+royalty$monarch <- gsub('.*Queen Mary.*', 'Monarch: Mary, Queen of Scots', royalty$monarch)
+#Create a new column for Victorias alone - we can create a subset of this to check
+royalty$victoria <- gsub('.*Victoria.*', 'Possible monarch: Victoria', royalty$monarch)
+royalty$anne <- gsub('.*Anne.*', 'Possible monarch: Anne', royalty$monarch)
+royalty$mary <- gsub('.*Mary.*', 'Possible monarch: Mary', royalty$monarch)
+```
+
+
+
+Along the way I spot the Prince of Wales in some paintings. Let's add him - and the Princess of Wales.
+
+```{r}
+royalty$monarch <- gsub('.*Prince of Wales.*', 'Monarch: Prince of Wales', royalty$monarch)
+royalty$monarch <- gsub('.*Princess of Wales.*', 'Monarch: Princess of Wales', royalty$monarch)
+```
+
+And let's add some more general columns that check for duke, prince or princess: 
+
+```{r}
+royalty$Duke <- grepl('.*Duke.*', royalty$monarch)
+#Note that words are case sensitive - princess with a small p only gets 2 matches; with a capital it's 250 - we could ask for either but...
+royalty$princess <- grepl('.*Princess.*', royalty$monarch)
+royalty$prince <- grepl('.*Prince[^s].*', royalty$monarch)
+royalty$queens <- grepl('.*Queen.*', royalty$monarch)
+royalty$kings <- grepl('.*King.*', royalty$monarch)
+# This one looks for Queen Victoria, under her title Empress of India
+royalty$Empress <- grepl('.*Empress.*', royalty$monarch)
+```
+
+Now to export: 
+
+```{r}
+#This will give us a CSV file containing a row for each work of art - 214,000 - it is 43MB
+write.csv(royalty, 'royalty.csv')
+#Creating a table based on one column generates a much smaller (7.4MB), summary, dataset - 165,000 rows because some appear more than once
+monarchs <- table(royalty$monarch)
+write.csv(monarchs, 'monarchs.csv')
+```
+
+Now let's generate a subset to inspect those with royal titles in the name:
+
+```{r}
+royaltitles <- subset(royalty, royalty$kings == TRUE | royalty$queens == TRUE | royalty$Duke == TRUE | royalty$prince == TRUE | royalty$princess == TRUE)
+```
+
+About 3500 - lots of King's Dragoons and things like that.
+
+We can also generate a subset of all those entries where we have changed the title:
+
+```{r}
+changed <- subset(royalty, royalty$monarch != royalty$title)
+write.csv(changed,'monarchsonly.csv')
+```
+
+The first time this runs it highlights that there are some problems - James IV being turned into Janes I; a steam train called Edward II; a portrait of a gentleman in the time of Charles II, and so on.
+
+It also didn't pick up those works of art which *only* consisted of the monarch's name and so were not changed at all. When writing our original code, we should have added an extra indicator, such as 'Monarch:' So I've gone back and changed that.
+
+
+

@@ -1,0 +1,67 @@
+---
+title: "Summarising art by artist"
+author: "Paul Bradshaw"
+date: "2/8/2017"
+output: html_document
+---
+
+# Summarising art by artist
+
+This markdown file details the code used to extract artists' names. Initially we did this simply based on rows where the artist field was empty or 'unknown artist'. However, many also just have the school, e.g. 'American School'.
+
+First let's grab the column with artist names and put that in a separate object, so it's smaller and easier to deal with:
+
+```{r}
+#With apologies to Talking Heads
+artistsonly <- bbcartfull[1]
+```
+
+Let's have a quick look at a summary of the most common values...
+
+```{r}
+summary(artistsonly)
+```
+
+We could just export that, but let's create a new column which classifies those entries more broadly, as a 'school' or not. First, try exploring with `grep`:
+
+```{r}
+#This will return the row numbers (indexes) of cells that match the regex ".*school.*"
+artistsonly$school <- grepl(".*school.*",artistsonly$artist)
+#There are only two - because it's case sensitive. Try this instead:
+artistsonly$school <- grepl(".*School.*",artistsonly$artist)
+```
+
+We do not want the numbers, though - what we want are a series of `TRUE` or `FALSE` results for each cell (does it match or not). The similar function `grepl` will return that. Note that the regex now stipulates *either* an upper or lower case 'S'.
+
+```{r}
+grepl(".*[Ss]chool.*",artistsonly$artist)
+```
+
+And we can create a new column for those results like so:
+
+```{r}
+artistsonly$school <- grepl(".*[Ss]chool.*",artistsonly$artist)
+```
+
+This table can now be exported - and that new column used either as a filter in a pivot table, or counted within the pivot table:
+
+```{r}
+write.csv(artistsonly, 'artists.csv')
+```
+
+If you do use it as a filter, and pivot on the 'artist', you'll find some matches which aren't unknown, e.g. *Griffiths, John, 1837â€“1918 & Students from the Bombay School of Art* and *Griffiths, John, 1837â€“1918 & Students from the Bombay School of Art*
+
+We can now clean that data in Excel by looking for particularly long artist names which might be a way of finding those where 'school' is just part of a long description and adding more categorisation... the Excel file in the same repo as this file shows how we did that.
+
+...Or we can get a definitive list of schools and only use those, rather than the regex. First we need to import that list from a CSV spreadsheet, then convert it into a vector, and finally use that to create our new columm
+
+```{r}
+#This CSV doesn't have a header row, so we need to set the header parameter to false
+schools <- read.csv('schools.csv', header = FALSE)
+#If you grab one column it is put in a vector object
+schoolist <- schools$V1
+#The %in% operator tests if one thing is in another. The right hand part of this formula generates a series of TRUE and FALSE responses for each item in that 'artist' column. That series can be added back into the original data as a new column
+artistsonly$inlist <- artistsonly$artist %in% schoolist
+write.csv(artistsonly, 'artistanalysis.csv')
+```
+
