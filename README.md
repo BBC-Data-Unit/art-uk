@@ -4,7 +4,7 @@
 
 In February 2017 we [reported on some findings from an analysis of Art UK's digital archive, which catalogues more than 200,000 of the nation's oil paintings](http://www.bbc.co.uk/news/uk-england-38340015).
 
-The story was the result of a lot of work using the programming language R to analyse the large number of records involved. Below you'll find a number of files that detail how various questions were asked and answered. 
+The story was the result of a lot of work using the programming language R to analyse the large number of records involved, with further cleaning and analysis often taking place in Excel. Below you'll find a number of files that detail how various questions were asked and answered. 
 
 ## Data
 
