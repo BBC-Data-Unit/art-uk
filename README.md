@@ -10,7 +10,6 @@ The story was the result of a lot of work using the programming language R to an
 
 The dataset is particularly large, so most of the initial analysis was done using R. See the scripts below in RMarkdown for an explanation.
 
-* [Full data on all works of art (CSV)](https://github.com/BBC-Data-Unit/art-uk/blob/master/artukdatafull.csv)
 * [Summary by medium (CSV)](https://github.com/BBC-Data-Unit/art-uk/blob/master/artmedium.csv)
 * [Summary by catalogue (CSV)](https://github.com/BBC-Data-Unit/art-uk/blob/master/catsum.csv)
 * [Summary by collection (CSV)](https://github.com/BBC-Data-Unit/art-uk/blob/master/collectionsummary.csv)
